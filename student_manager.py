@@ -90,14 +90,32 @@ def updateStudentEmail(student_id, new_email):
 
     finally:
         connection.close()
-    
+
+def deleteStudent(student_id):
+    connection = connect_db()
+    try:
+        with connection, connection.cursor() as cur:
+            # %s placeholders to prevent SQL injection | trailling comma makes this a tuple
+            cur.execute("DELETE FROM students WHERE student_id = %s;", (student_id,))
+
+            # rowcount is number of rows changed; example: 0 means no student had the id
+            if cur.rowcount == 0:
+                print(f"No student found with ID {student_id}.")
+                return False
+
+        print(f"Deleted student {student_id}.")
+        return True
+
+    finally:
+        connection.close()
 
 def main():
     # menu for crud functionality
     menu = ("\n1) View all students\n"
             "2) Add student\n"
             "3) Update student email\n"
-            "4) Quit")
+            "4) Delete student\n"
+            "5) Quit")
 
     # shows menu and each menu option
     while True:
@@ -115,16 +133,21 @@ def main():
             
             elif choice == "3":
                 updateStudentEmail(int(input("Student ID: ")), input("New email: "))
-            
+
             elif choice == "4":
+                deleteStudent(int(input("Student ID: ")))
+            
+            elif choice == "5":
                 break
 
             else:
                 print("Invalid option.")
-        
+
+        # throws error if provided id input is anything but an int
         except ValueError:
             print("Student ID must be a number.")
-        
+
+        # connection error
         except psycopg2.OperationalError as e:
             print(f"Could not connect to database: {e}")
 
