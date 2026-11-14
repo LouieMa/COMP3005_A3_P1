@@ -37,6 +37,7 @@ def getAllStudents():
            print(f"{'ID':<4}{'First':<10}{'Last':<10}{'Email':<28}{'Enrolled'}")
            for sid, first, last, email, date in rows:
                print(f"{sid:<4}{first:<10}{last:<10}{email:<28}{date}")
+
    finally:
        connection.close()
 
@@ -51,39 +52,79 @@ def addStudent(first_name, last_name, email, enrollment_date):
                 (first_name, last_name, email, enrollment_date),
             )
             new_std_id = cur.fetchone()[0]
+        
         print(f"Added student {first_name} {last_name} with ID {new_std_id}.")
         return new_std_id
+
     # rejects duplicate email since email is unique
     except errors.UniqueViolation:
         print(f"Error: email '{email}' is already in use.")
+    
     # missing info in the provided student attributes
     except (errors.NotNullViolation, errors.InvalidDatetimeFormat, errors.DatetimeFieldOverflow) as e:
         print(f"Error: invalid input - {e.pgerror.strip()}")
+    
     finally:
         connection.close()
+
+def updateStudentEmail(student_id, new_email):
+    connection = connect_db()
+    try:
+        with connection, connection.cursor() as cur:
+
+            # %s placeholders to prevent sql injection
+            cur.execute("UPDATE students SET email = %s WHERE student_id = %s;",
+                        (new_email, student_id))
+            
+            # rowcount is number of rows changed; example: 0 means no student had the id
+            if cur.rowcount == 0:
+                print(f"No student found with ID {student_id}.")
+                return False
+        print(f"Updated email for student {student_id} to {new_email}.")
+        return True
+
+    # Since email is unique using the same email will cause an error
+    except errors.UniqueViolation:
+        print(f"Error: email '{new_email}' is already in use.")
+        return False
+
+    finally:
+        connection.close()
+    
 
 def main():
     # menu for crud functionality
     menu = ("\n1) View all students\n"
             "2) Add student\n"
-            "3) Quit")
+            "3) Update student email\n"
+            "4) Quit")
 
     # shows menu and each menu option
     while True:
         print(menu)
         choice = input("Choose an option: ").strip()
+
         try:
             if choice == "1":
                 getAllStudents();
+            
             elif choice == "2":
+                # the none means it will be store as NULL
                 addStudent(input("First name: "), input("Last name: "), input("Email: "),
                            input("Enrollment date (YYYY-MM-DD, blank for none): ") or None)
+            
             elif choice == "3":
+                updateStudentEmail(int(input("Student ID: ")), input("New email: "))
+            
+            elif choice == "4":
                 break
+
             else:
                 print("Invalid option.")
+        
         except ValueError:
             print("Student ID must be a number.")
+        
         except psycopg2.OperationalError as e:
             print(f"Could not connect to database: {e}")
 
