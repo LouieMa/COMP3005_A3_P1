@@ -23,12 +23,17 @@ def getAllStudents():
    connection = connect_db()
    try:
        with connection, connection.cursor() as cur:
+           # get all students sorted by student id
            cur.execute("SELECT student_id, first_name, last_name, email, enrollment_date "
                        "FROM students ORDER BY student_id;")
            rows = cur.fetchall()
+
+           # if tables are empty it will print a message and return
            if not rows:
                print("No students found.")
                return
+
+           #prints all content
            print(f"{'ID':<4}{'First':<10}{'Last':<10}{'Email':<28}{'Enrolled'}")
            for sid, first, last, email, date in rows:
                print(f"{sid:<4}{first:<10}{last:<10}{email:<28}{date}")
@@ -39,6 +44,8 @@ def main():
     # menu for crud functionality
     menu = ("\n1) View all students\n"
             "2) Quit")
+
+    # shows menu and each menu option
     while True:
         print(menu)
         choice = input("Choose an option: ").strip()
